@@ -90,12 +90,10 @@ def log2(x):
 	return log(x)/LN_2
 
 def gSquared(data, varA, varB, conditions):
-	# G = 2 * N * H(a | s) + H(b | s) - H(a,b | s)
 	indexes = sorted((varA, varB) + conditions)
 	indexA = indexes.index(varA)
 	indexB = indexes.index(varB)
 	sumAxes = [x for x in xrange(len(data.shape)) if not x in indexes]
-	#print "    Testing %d and %d given %s, omit %s" % (varA, varB, str(conditions), str(sumAxes))
 	# sum from right to left to avoid moving index problems
 	absData = data
 	for axis in reversed(sumAxes):
@@ -104,38 +102,24 @@ def gSquared(data, varA, varB, conditions):
 	bsData = numpy.sum(absData, indexA)
 	sData = numpy.sum(asData, indexA)
 	count = numpy.sum(sData)
-#	print absData
-#	print asData
-#	print bsData
-#	print sData
-	h_a_N = 0
-	h_b_N = 0
-	h_ab_N = 0
+	gVal = 0
 	for values in product([0,1], repeat=len(indexes)):
 		sCount = sData[values[:indexA]+values[indexA+1:indexB]+values[indexB+1:]]
 		asCount = asData[values[:indexB]+values[indexB+1:]]
 		bsCount = bsData[values[:indexA]+values[indexA+1:]]
 		absCount = absData[values]
-#		print sCount
-#		print asCount
-#		print bsCount
-#		print absCount
-		if asCount > 0:
-			h_a_N += float(asCount)/count * log2(float(sCount)/asCount)
-		if bsCount > 0:
-			h_b_N += float(bsCount)/count * log2(float(sCount)/bsCount)
-		if absCount > 0:
-			h_ab_N += float(absCount)/count * log2(float(sCount)/absCount)
 
-	return 2 * (h_a_N + h_b_N - h_ab_N)
-		
+		expected = float(asCount) * bsCount / sCount
+		gVal += float(sCount)/count * absCount * log(absCount / expected)
+
+	return 2 * gVal
 
 def independent(data, varA, varB, conditions):
 	# P(varA and varB | conditions) == P(varA | conditions)P(varB | conditions)
 	# TODO: this is really inefficient, and the reason the program is slow
 	gsq = gSquared(data, varA, varB, conditions)
 	#print "Gsq(%d %d | %s) = %f" % (varA, varB, str(conditions), gsq)
-	if abs(gsq) < 2.8:
+	if abs(gsq) < 4.0: # P < 0.04, seems like a good number
 		print "    INDEPENDENT! %s (%f)" % (conditions, gsq)
 		return True
 	return False
