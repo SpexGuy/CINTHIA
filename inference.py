@@ -47,7 +47,7 @@ def ICStar(model, truth):
 	nodeNeighbors = model.findNonadjacentNeighbors()
 	for (nodes, neighbor) in nodeNeighbors:
 		if nodes in separators:
-			if neighbor in separators[nodes]:
+			if not neighbor in separators[nodes]:
 				print "Trig! %s" % (str((nodes, neighbor)),)
 				model.getEdge(nodes[0], neighbor).forwardFrom(nodes[0], graph.UNCERTAIN)
 				model.getEdge(nodes[1], neighbor).forwardFrom(nodes[1], graph.UNCERTAIN)
