@@ -105,6 +105,9 @@ class Graph:
 	def getEdges(self):
 		return self._edges
 
+	def addEdge(self, idxA, idxB, edgeType):
+		self._edges.append(Edge(self._nodes[idxA], self._nodes[idxB], edgeType))
+
 	def generateDataPoint(self, do=None):
 		# assumes DAG node list is sorted in ascending order!!!
 		if do is None:
@@ -128,6 +131,9 @@ class Graph:
 
 		dot.write('}\n')
 		dot.close()
+
+	def copyNodes(self):
+		return Graph([DirectedNode(node.getIndex(), node.getName()) for node in self._nodes])
 
 def generateDAG(numNodes, edgeProbability, generateName):
 	nodes = [DirectedNode(n, generateName()) for n in xrange(numNodes)]
