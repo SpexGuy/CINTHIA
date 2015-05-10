@@ -82,6 +82,14 @@ class DirectedNode:
 		return 1 if random() < self._condProbs[index] else 0
 
 
+def makeDo(probMap):
+	def do(idx, node, values):
+		if idx in probMap:
+			return int(random() < probMap[idx])
+		return node.generate(values)
+	return do
+
+
 class Graph:
 	def __init__(self, nodes=None, edges=None):
 		if nodes is None:
@@ -97,15 +105,17 @@ class Graph:
 	def getEdges(self):
 		return self._edges
 
-	def generateDataPoint(self):
+	def generateDataPoint(self, do=None):
 		# assumes DAG node list is sorted in ascending order!!!
+		if do is None:
+			do = lambda idx, node, values: node.generate(values)
 		values = []
-		for node in self._nodes:
-			values.append(node.generate(values))
+		for idx, node in enumerate(self._nodes):
+			values.append(do(idx, node, values))
 		return numpy.array(values)
 
-	def generateDataPoints(self, number):
-		return numpy.array(list(self.generateDataPoint() for _ in xrange(number)))
+	def generateDataPoints(self, number, do=None):
+		return numpy.array(list(self.generateDataPoint(do) for _ in xrange(number)))
 
 	def writeDOT(self, filename):
 		dot = open(filename, 'w')
