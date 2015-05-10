@@ -1,4 +1,5 @@
 from random import random
+import numpy
 
 # Edge types
 RELATED_SOMEHOW = 0
@@ -35,6 +36,15 @@ class Edge:
 	def mayStartWith(self, node):
 		return (node is self._src) if self.isForward() else (node is self._dest) if self.isReverse() else (node is self._src or node is self._dest)
 
+	def mayEndWith(self, node):
+		return (node is self._dest) if self.isForward() else (node is self._src) if self.isReverse() else (node is self._src or node is self._dest)
+
+	def otherEnd(self, known):
+		if known is self._src:
+			return self._dest
+		assert(known is self._dest)
+		return self._src
+
 	def isForward(self):
 		return (self._type // 2) == FORWARD
 
@@ -63,6 +73,14 @@ class DirectedNode:
 	def getIndex(self):
 		return self._idx
 
+	def genSetup(self):
+		self._condSize = tuple(2 for edge in self._edges if edge.mayEndWith(self))
+		self._condProbs = numpy.random.random_sample(self._condSize)
+
+	def generate(self, values):
+		index = tuple(values[edge.otherEnd(self).getIndex()] for edge in self._edges if edge.mayEndWith(self))
+		return 1 if random() < self._condProbs[index] else 0
+
 
 class Graph:
 	def __init__(self, nodes=None, edges=None):
@@ -78,6 +96,16 @@ class Graph:
 
 	def getEdges(self):
 		return self._edges
+
+	def generateDataPoint(self):
+		# assumes DAG node list is sorted in ascending order!!!
+		values = []
+		for node in self._nodes:
+			values.append(node.generate(values))
+		return numpy.array(values)
+
+	def generateDataPoints(self, number):
+		return numpy.array(list(self.generateDataPoint() for _ in xrange(number)))
 
 	def writeDOT(self, filename):
 		dot = open(filename, 'w')
@@ -98,5 +126,9 @@ def generateDAG(numNodes, edgeProbability, generateName):
 		for j in xrange(i+1, numNodes):
 			if (random() < edgeProbability):
 				edges.append(Edge(nodes[i], nodes[j], FORWARD_CERTAIN))
+
+	for node in nodes:
+		node.genSetup()
+
 	return Graph(nodes, edges)
 
